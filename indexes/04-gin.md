@@ -4,6 +4,67 @@
 
 A GIN (Generalized Inverted Index) is a specialized index structure designed for handling cases where multiple values are stored in a single column, such as arrays, full-text search documents, and JSON data. It creates an index entry for each component value (array element, text token, or JSON key) with a list of row IDs where that value appears.
 
+### How GIN Maps Values to Rows
+
+GIN works by creating an inverted index, which maps each individual value (word, array element, or JSON key) to a list of rows where that value appears. Here's a visualization:
+
+```mermaid
+graph LR
+    subgraph Documents
+        R1[Row 1:<br/>PostgreSQL is fast]
+        R2[Row 2:<br/>PostgreSQL and MySQL]
+        R3[Row 3:<br/>MySQL is popular]
+    end
+
+    subgraph "GIN Index Structure"
+        direction TB
+        W1[and] --> L1[Row 2]
+        W2[fast] --> L2[Row 1]
+        W3[is] --> L3[Row 1, Row 3]
+        W4[mysql] --> L4[Row 2, Row 3]
+        W5[popular] --> L5[Row 3]
+        W6[postgresql] --> L6[Row 1, Row 2]
+    end
+
+    style R1 fill:#f0f0f0,stroke:#333,stroke-width:1px,color:#000
+    style R2 fill:#f0f0f0,stroke:#333,stroke-width:1px,color:#000
+    style R3 fill:#f0f0f0,stroke:#333,stroke-width:1px,color:#000
+    
+    style W1 fill:#bbf,stroke:#333,stroke-width:1px,color:#000
+    style W2 fill:#bbf,stroke:#333,stroke-width:1px,color:#000
+    style W3 fill:#bbf,stroke:#333,stroke-width:1px,color:#000
+    style W4 fill:#bbf,stroke:#333,stroke-width:1px,color:#000
+    style W5 fill:#bbf,stroke:#333,stroke-width:1px,color:#000
+    style W6 fill:#bbf,stroke:#333,stroke-width:1px,color:#000
+    
+    style L1 fill:#ddf,stroke:#333,stroke-width:1px,color:#000
+    style L2 fill:#ddf,stroke:#333,stroke-width:1px,color:#000
+    style L3 fill:#ddf,stroke:#333,stroke-width:1px,color:#000
+    style L4 fill:#ddf,stroke:#333,stroke-width:1px,color:#000
+    style L5 fill:#ddf,stroke:#333,stroke-width:1px,color:#000
+    style L6 fill:#ddf,stroke:#333,stroke-width:1px,color:#000
+```
+
+#### How It Works:
+1. **Document Storage**: Each row in the table contains the full text/array/JSON data
+2. **Value Extraction**: GIN breaks down the content into individual values:
+   - For text: words or lexemes
+   - For arrays: individual elements
+   - For JSON: keys and values
+3. **Inverted Mapping**: Creates a mapping where:
+   - Keys are the individual values
+   - Values are lists of row IDs where those values appear
+4. **Fast Lookups**: When searching:
+   - Finds the relevant values in the index
+   - Gets the intersection/union of row IDs
+   - Retrieves only matching rows
+
+This structure makes GIN extremely efficient for:
+- Full-text search (finding all documents containing specific words)
+- Array containment (@> operator)
+- JSON key/value lookups
+- Complex queries involving multiple values
+
 ## When to Use GIN Indexes?
 
 GIN indexes are ideal for:
